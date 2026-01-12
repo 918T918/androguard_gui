@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem,
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 
 class ScannerThread(QThread):
-    found = pyqtSignal(str, object, str) # category, method_obj, description
+    found = pyqtSignal(str, object, str)
     finished = pyqtSignal()
     progress = pyqtSignal(int)
 
@@ -31,7 +31,6 @@ class ScannerThread(QThread):
                 
             for method in c.get_methods():
                 m_obj = method.get_method()
-                # Check instructions for API calls
                 code = m_obj.get_code()
                 if not code: continue
                 

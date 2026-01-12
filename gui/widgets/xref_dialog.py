@@ -6,7 +6,7 @@ class XRefDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(600, 400)
-        self.xrefs = xrefs # list of (ClassAnalysis, MethodAnalysis, offset)
+        self.xrefs = xrefs
         self.selected_method = None
         
         self.setup_ui()
@@ -21,14 +21,11 @@ class XRefDialog(QDialog):
         self.list_widget.itemDoubleClicked.connect(self.on_item_double_clicked)
         
         for class_analysis, method_analysis, offset in self.xrefs:
-            # Format: Class->Method (offset)
-            # method_analysis is MethodAnalysis
             method_name = method_analysis.get_method().get_name()
             class_name = class_analysis.get_name()
             
             text = f"{class_name} -> {method_name} (offset: {offset})"
             item = QListWidgetItem(text)
-            # Store the method object to jump to
             item.setData(Qt.ItemDataRole.UserRole, method_analysis.get_method())
             self.list_widget.addItem(item)
             

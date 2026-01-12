@@ -21,17 +21,11 @@ class ResourceViewer(QWidget):
 
     def load_resources(self):
         try:
-            # Get resources.arsc decoded as XML
-            # Some versions of androguard provide get_resources_as_xml or similar
-            # Alternatively, we can iterate through the ResourceTable
             r = self.apk.get_resources()
             if not r:
                 self.editor.setPlainText("No resources found.")
                 return
             
-            # This is a bit complex in Androguard to get one giant XML.
-            # Usually we want to see specific resource files.
-            # For now, let's list the basic public resources.
             out = ["<!-- Decoded Resources -->\n<resources>"]
             
             for package in r.get_packages_names():

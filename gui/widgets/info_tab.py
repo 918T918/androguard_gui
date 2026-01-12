@@ -19,18 +19,15 @@ class InfoTab(QWidget):
         layout.addWidget(scroll)
         self.setLayout(layout)
         
-        # Initial placeholder
         self.form_layout.addRow(QLabel("Load an APK to see details."))
 
     def update_info(self, apk):
-        # Clear existing
         while self.form_layout.count():
             item = self.form_layout.takeAt(0)
             widget = item.widget()
             if widget:
                 widget.deleteLater()
 
-        # Basic Info
         self.add_section("General Information")
         self.add_row("App Name", apk.get_app_name())
         self.add_row("Package Name", apk.get_package())
@@ -39,7 +36,6 @@ class InfoTab(QWidget):
         self.add_row("Min SDK", apk.get_min_sdk_version())
         self.add_row("Target SDK", apk.get_target_sdk_version())
         
-        # Permissions
         self.add_section("Permissions")
         perms = apk.get_permissions()
         if perms:
@@ -48,14 +44,12 @@ class InfoTab(QWidget):
         else:
              self.form_layout.addRow(QLabel("No permissions found."))
 
-        # Activities
         self.add_section("Activities")
         acts = apk.get_activities()
         if acts:
             for a in acts:
                 self.form_layout.addRow(QLabel(str(a)))
         
-        # Services
         self.add_section("Services")
         srvs = apk.get_services()
         if srvs:

@@ -5,8 +5,8 @@ from androguard.core.analysis.analysis import Analysis
 import traceback
 
 class AnalysisThread(QThread):
-    finished = pyqtSignal(object, object, object) # apk, classes, dex
-    progress = pyqtSignal(str, int) # message, percentage
+    finished = pyqtSignal(object, object, object)
+    progress = pyqtSignal(str, int)
     error = pyqtSignal(str)
 
     def __init__(self, apk_path):

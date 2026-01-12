@@ -32,7 +32,7 @@ class SearchThread(QThread):
 
 class FullTextSearchThread(QThread):
     finished = pyqtSignal(list)
-    progress = pyqtSignal(int, str) # progress, current_class
+    progress = pyqtSignal(int, str)
     
     def __init__(self, dx, query):
         super().__init__()

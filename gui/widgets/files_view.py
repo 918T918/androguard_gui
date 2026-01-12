@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 from PyQt6.QtCore import Qt, pyqtSignal
 
 class FilesView(QTreeWidget):
-    fileSelected = pyqtSignal(str, bytes) # path, data
+    fileSelected = pyqtSignal(str, bytes)
 
     def __init__(self, apk):
         super().__init__()
@@ -15,7 +15,6 @@ class FilesView(QTreeWidget):
         self.clear()
         self.item_cache = {"": self.invisibleRootItem()}
         
-        # get_files() returns a list of filenames
         for filename in self.apk.get_files():
             parts = filename.split('/')
             parent_path = ""
@@ -27,7 +26,6 @@ class FilesView(QTreeWidget):
                     self.item_cache[path] = item
                 parent_path = path
             
-            # The last item is the file
             self.item_cache[filename].setData(0, Qt.ItemDataRole.UserRole, filename)
 
     def on_item_double_clicked(self, item, col):

@@ -4,7 +4,6 @@ import traceback
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from gui.main_window import MainWindow
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
@@ -20,7 +19,6 @@ def exception_hook(exctype, value, tb):
     error_msg = "".join(traceback.format_exception(exctype, value, tb))
     logger.error(f"Uncaught exception:\n{error_msg}")
     
-    # Ensure application is running to show a message box
     if QApplication.instance():
         QMessageBox.critical(None, "Critical Error", 
                            f"An unexpected error occurred:\n{value}\n\nCheck androguard_gui.log for details.")

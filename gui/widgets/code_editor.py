@@ -22,10 +22,8 @@ class DecompilerThread(QThread):
                 return
             
             if self.is_method:
-                # DvMethod takes (EncodedMethod, Analysis)
                 dv = DvMethod(self.obj, self.dx)
             else:
-                # DvClass takes (ClassDefItem/EncodedClass, Analysis)
                 dv = DvClass(self.obj, self.dx)
                 
             dv.process()
@@ -69,7 +67,6 @@ class CodeEditorTab(QWidget):
     def on_decompile_finished(self, source):
         self.loading_label.hide()
         
-        # Highlight
         try:
             formatter = HtmlFormatter(style='colorful', full=True, noclasses=True)
             html_content = highlight(source, JavaLexer(), formatter)

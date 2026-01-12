@@ -30,18 +30,15 @@ class MainWindow(QMainWindow):
         self.settings = QSettings("Gemini", "AndroguardGUI")
         self.apk_path = None
         
-        # Theme
         self.dark_mode = self.settings.value("darkMode", "True") == "True"
         
         self.analysis_thread = None
         self.dx = None
         
-        # Navigation History
         self.history = []
         self.history_index = -1
         self.navigating = False
         
-        # UI Setup
         self.setup_ui()
         self.setup_menu()
         self.setup_toolbar()
@@ -51,30 +48,30 @@ class MainWindow(QMainWindow):
         if self.dark_mode:
             self.setStyleSheet("""
                 QMainWindow, QWidget, QDockWidget, QDialog {
-                    background-color: #2b2b2b;
-                    color: #d3d3d3;
+                    background-color:
+                    color:
                 }
-                QTabWidget::pane { border: 1px solid #444; }
-                QTabBar::tab { background: #3c3f41; padding: 5px; margin: 2px; }
-                QTabBar::tab:selected { background: #4b4b4b; }
+                QTabWidget::pane { border: 1px solid
+                QTabBar::tab { background:
+                QTabBar::tab:selected { background:
                 QTreeWidget, QListWidget, QTextEdit, QPlainTextEdit, QTableWidget, QLineEdit {
-                    background-color: #323232;
-                    color: #e0e0e0;
-                    border: 1px solid #555;
+                    background-color:
+                    color:
+                    border: 1px solid
                 }
                 QMenuBar, QMenu, QToolBar {
-                    background-color: #3c3f41;
-                    color: #d3d3d3;
+                    background-color:
+                    color:
                 }
-                QMenu::item:selected { background-color: #4b4b4b; }
+                QMenu::item:selected { background-color:
                 QPushButton {
-                    background-color: #4e5254;
-                    color: #eee;
-                    border: 1px solid #555;
+                    background-color:
+                    color:
+                    border: 1px solid
                     padding: 5px;
                 }
-                QPushButton:hover { background-color: #5c6164; }
-                QStatusBar { background: #3c3f41; color: #888; }
+                QPushButton:hover { background-color:
+                QStatusBar { background:
             """)
         else:
             self.setStyleSheet("")
@@ -102,7 +99,6 @@ class MainWindow(QMainWindow):
         self.info_tab = InfoTab()
         self.central_tabs.addTab(self.info_tab, "Dashboard")
         
-        # Log Console
         self.log_dock = QDockWidget("Log Console", self)
         self.log_dock.setAllowedAreas(Qt.DockWidgetArea.BottomDockWidgetArea)
         self.log_console = QTextEdit()
@@ -111,7 +107,6 @@ class MainWindow(QMainWindow):
         self.log_dock.setWidget(self.log_console)
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.log_dock)
         
-        # Status Bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         

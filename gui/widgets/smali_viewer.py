@@ -19,7 +19,6 @@ class SmaliViewer(QWidget):
     def load_smali(self):
         try:
             out = []
-            # method_obj is EncodedMethod
             out.append(f".method {self.method_obj.get_access_flags_string()} {self.method_obj.get_name()}{self.method_obj.get_descriptor()}")
             
             code = self.method_obj.get_code()

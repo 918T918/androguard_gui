@@ -24,8 +24,6 @@ class ManifestViewer(QWidget):
 
     def load_manifest(self):
         try:
-            # Androguard's get_android_manifest_xml returns an lxml object
-            # We need to convert it to string
             axml = self.apk.get_android_manifest_xml()
             if axml is not None:
                 from lxml import etree

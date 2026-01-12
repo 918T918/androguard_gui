@@ -16,19 +16,16 @@ class ExportThread(QThread):
         for c_analysis in classes:
             try:
                 cls = c_analysis.get_vm_class()
-                name = cls.get_name()[1:-1] # a/b/c
+                name = cls.get_name()[1:-1]
                 self.progress.emit(name)
                 
-                # Create directory structure
                 parts = name.split('/')
                 package_dir = os.path.join(self.out_dir, *parts[:-1])
                 os.makedirs(package_dir, exist_ok=True)
                 
-                # Decompile
                 dv = DvClass(cls, self.dx)
                 dv.process()
                 
-                # Save
                 file_path = os.path.join(self.out_dir, name + ".java")
                 with open(file_path, "w") as f:
                     f.write(dv.get_source())

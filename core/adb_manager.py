@@ -4,9 +4,6 @@ import os
 
 class ADBManager:
     def __init__(self, adb_path="adb"):
-        # If adb is in path, "adb" works. Otherwise user might need to specify.
-        # Since we found it in a specific path, we might want to use that or rely on PATH.
-        # The user's env seems to have it in PATH based on 'which adb'.
         self.adb_path = adb_path
 
     def get_devices(self):
@@ -17,7 +14,6 @@ class ADBManager:
             for line in output.splitlines()[1:]:
                 line = line.strip()
                 if line:
-                    # Use rsplit to handle serials that might contain spaces
                     parts = line.rsplit(None, 1)
                     if len(parts) == 2 and parts[1] == "device":
                         devices.append(parts[0])
@@ -33,7 +29,6 @@ class ADBManager:
             packages = []
             for line in output.splitlines():
                 if line.startswith("package:"):
-                    # format: package:/data/app/com.example-1/base.apk=com.example
                     line = line[8:]
                     if "=" in line:
                         path, name = line.rsplit("=", 1)

@@ -7,7 +7,7 @@ import os
 import tempfile
 
 class PullThread(QThread):
-    finished = pyqtSignal(str) # returns path of pulled apk
+    finished = pyqtSignal(str)
     error = pyqtSignal(str)
 
     def __init__(self, adb, serial, remote_path, package_name):
@@ -19,8 +19,6 @@ class PullThread(QThread):
 
     def run(self):
         try:
-            # Create a temp file
-            # We want to keep it valid for the session
             tmp_dir = os.path.join(tempfile.gettempdir(), "androguard_gui_pulls")
             os.makedirs(tmp_dir, exist_ok=True)
             local_filename = f"{self.package_name}.apk"
@@ -38,7 +36,7 @@ class DeviceDialog(QDialog):
         self.resize(600, 500)
         
         self.adb = ADBManager()
-        self.selected_apk_path = None # Result
+        self.selected_apk_path = None
         
         self.setup_ui()
         self.refresh_devices()
@@ -46,7 +44,6 @@ class DeviceDialog(QDialog):
     def setup_ui(self):
         layout = QVBoxLayout()
         
-        # Top bar: Device Selector + Refresh
         top_layout = QHBoxLayout()
         self.device_combo = QComboBox()
         self.device_combo.currentIndexChanged.connect(self.load_packages)
@@ -59,17 +56,14 @@ class DeviceDialog(QDialog):
         
         layout.addLayout(top_layout)
         
-        # Filter
         self.filter_input = QLineEdit()
         self.filter_input.setPlaceholderText("Search packages...")
         self.filter_input.textChanged.connect(self.filter_packages)
         layout.addWidget(self.filter_input)
         
-        # Package List
         self.package_list = QListWidget()
         layout.addWidget(self.package_list)
         
-        # Buttons
         btn_layout = QHBoxLayout()
         cancel_btn = QPushButton("Cancel")
         cancel_btn.clicked.connect(self.reject)
@@ -104,10 +98,9 @@ class DeviceDialog(QDialog):
 
         serial = self.device_combo.currentText()
         self.package_list.clear()
-        self.packages = [] # Store (name, path)
+        self.packages = []
         
         try:
-            # Show simple loading... (or use thread if slow)
             self.packages = self.adb.get_packages(serial)
             self.update_list(self.packages)
         except Exception as e:
@@ -129,12 +122,9 @@ class DeviceDialog(QDialog):
 
     def pull_selected(self):
         item = self.package_list.selectedItems()[0]
-        # Parse text to get name/path again or lookup
-        # Format: "{name}  [{path}]"
         text = item.text()
         name = text.split("  [")[0]
         
-        # Find path in self.packages
         path = None
         for p_name, p_path in self.packages:
             if p_name == name:
@@ -146,7 +136,6 @@ class DeviceDialog(QDialog):
 
         serial = self.device_combo.currentText()
         
-        # Start Pull Thread
         self.progress = QProgressDialog("Pulling APK...", "Cancel", 0, 0, self)
         self.progress.setWindowModality(Qt.WindowModality.WindowModal)
         self.progress.show()
