@@ -33,9 +33,15 @@ class ResourceViewer(QWidget):
                         out.append(f'  <item type="{type_name}" name="{res.get_name()}">{res.get_value()}</item>')
             out.append("</resources>")
             xml_str = "\n".join(out)
+            
             style = 'monokai' if self.dark_mode else 'colorful'
-            formatter = HtmlFormatter(style=style, full=True, noclasses=True)
+            formatter = HtmlFormatter(style=style, full=False, noclasses=True)
             html_content = highlight(xml_str, XmlLexer(), formatter)
-            self.editor.setHtml(html_content)
+            
+            bg_color = "#2b2b2b" if self.dark_mode else "#ffffff"
+            text_color = "#d3d3d3" if self.dark_mode else "#000000"
+            styled_html = f"<div style='background-color: {bg_color}; color: {text_color};'>{html_content}</div>"
+            
+            self.editor.setHtml(styled_html)
         except Exception as e:
             self.editor.setPlainText(f"Error decoding resources: {e}")

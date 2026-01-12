@@ -27,10 +27,18 @@ class ManifestViewer(QWidget):
             if axml is not None:
                 from lxml import etree
                 xml_str = etree.tostring(axml, pretty_print=True, encoding='unicode')
+                
                 style = 'monokai' if self.dark_mode else 'colorful'
-                formatter = HtmlFormatter(style=style, full=True, noclasses=True)
+                # Use full=False to get just the HTML fragment
+                formatter = HtmlFormatter(style=style, full=False, noclasses=True)
                 html_content = highlight(xml_str, XmlLexer(), formatter)
-                self.editor.setHtml(html_content)
+                
+                # Wrap in a div with the correct background color to avoid white bars
+                bg_color = "#2b2b2b" if self.dark_mode else "#ffffff"
+                text_color = "#d3d3d3" if self.dark_mode else "#000000"
+                styled_html = f"<div style='background-color: {bg_color}; color: {text_color};'>{html_content}</div>"
+                
+                self.editor.setHtml(styled_html)
             else:
                 self.editor.setPlainText("Could not parse AndroidManifest.xml")
         except Exception as e:
