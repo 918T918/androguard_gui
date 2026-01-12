@@ -15,9 +15,11 @@ class ADBManager:
             output = subprocess.check_output([self.adb_path, "devices"]).decode("utf-8")
             devices = []
             for line in output.splitlines()[1:]:
-                if line.strip():
-                    parts = line.split()
-                    if len(parts) >= 2 and parts[1] == "device":
+                line = line.strip()
+                if line:
+                    # Use rsplit to handle serials that might contain spaces
+                    parts = line.rsplit(None, 1)
+                    if len(parts) == 2 and parts[1] == "device":
                         devices.append(parts[0])
             return devices
         except Exception as e:
