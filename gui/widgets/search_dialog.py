@@ -1,6 +1,8 @@
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QLineEdit, QListWidget, 
-                             QPushButton, QLabel, QProgressBar, QHBoxLayout, QMessageBox, QListWidgetItem)
+                             QPushButton, QLabel, QProgressBar, QHBoxLayout, QMessageBox, QListWidgetItem,
+                             QComboBox)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from androguard.decompiler.dad.decompile import DvClass
 
 class SearchThread(QThread):
     finished = pyqtSignal(list)
@@ -13,33 +15,55 @@ class SearchThread(QThread):
         
     def run(self):
         results = []
-        # Search Classes
-        classes = list(self.dx.get_classes()) # Returns ClassAnalysis
+        classes = list(self.dx.get_classes())
         total = len(classes)
         
         for i, c in enumerate(classes):
             if i % 100 == 0:
                 self.progress.emit(int((i / total) * 100))
-                
-            c_name = c.name
-            if self.query in c_name.lower():
-                # Found class
-                # get_vm_class() returns EncodedClass
+            if self.query in c.name.lower():
                 results.append(('class', c.get_vm_class()))
-                
-            # Search Methods
             for m in c.get_methods():
-                m_name = m.name
-                if self.query in m_name.lower():
+                if self.query in m.name.lower():
                     results.append(('method', m.get_method()))
-                    
+        self.finished.emit(results)
+
+class FullTextSearchThread(QThread):
+    finished = pyqtSignal(list)
+    progress = pyqtSignal(int, str) # progress, current_class
+    
+    def __init__(self, dx, query):
+        super().__init__()
+        self.dx = dx
+        self.query = query.lower()
+        
+    def run(self):
+        results = []
+        classes = list(self.dx.get_classes())
+        total = len(classes)
+        
+        for i, c_analysis in enumerate(classes):
+            if i % 10 == 0:
+                self.progress.emit(int((i / total) * 100), c_analysis.name)
+            
+            try:
+                cls = c_analysis.get_vm_class()
+                dv = DvClass(cls, self.dx)
+                dv.process()
+                source = dv.get_source().lower()
+                
+                if self.query in source:
+                    results.append(('class', cls))
+            except Exception:
+                continue
+                
         self.finished.emit(results)
 
 class SearchDialog(QDialog):
     def __init__(self, parent, dx):
         super().__init__(parent)
-        self.setWindowTitle("Search Symbols")
-        self.resize(500, 600)
+        self.setWindowTitle("Search Symbols & Code")
+        self.resize(600, 600)
         self.dx = dx
         self.selected_obj = None
         self.selected_type = None
@@ -49,14 +73,25 @@ class SearchDialog(QDialog):
     def setup_ui(self):
         layout = QVBoxLayout()
         
+        h_layout = QHBoxLayout()
+        self.search_mode = QComboBox()
+        self.search_mode.addItems(["Symbol Names (Fast)", "Full-Text Code (Slow)"])
+        h_layout.addWidget(QLabel("Mode:"))
+        h_layout.addWidget(self.search_mode, 1)
+        layout.addLayout(h_layout)
+        
         self.query_input = QLineEdit()
-        self.query_input.setPlaceholderText("Search class or method name...")
+        self.query_input.setPlaceholderText("Search query...")
         self.query_input.returnPressed.connect(self.start_search)
         layout.addWidget(self.query_input)
         
         btn_search = QPushButton("Search")
         btn_search.clicked.connect(self.start_search)
         layout.addWidget(btn_search)
+        
+        self.progress_label = QLabel("")
+        self.progress_label.hide()
+        layout.addWidget(self.progress_label)
         
         self.progress = QProgressBar()
         self.progress.hide()
@@ -76,13 +111,25 @@ class SearchDialog(QDialog):
         self.progress.setValue(0)
         self.progress.show()
         
-        self.thread = SearchThread(self.dx, query)
-        self.thread.progress.connect(self.progress.setValue)
+        if self.search_mode.currentIndex() == 0:
+            self.progress_label.hide()
+            self.thread = SearchThread(self.dx, query)
+            self.thread.progress.connect(self.progress.setValue)
+        else:
+            self.progress_label.show()
+            self.thread = FullTextSearchThread(self.dx, query)
+            self.thread.progress.connect(self.on_fulltext_progress)
+            
         self.thread.finished.connect(self.on_search_finished)
         self.thread.start()
 
+    def on_fulltext_progress(self, val, cls_name):
+        self.progress.setValue(val)
+        self.progress_label.setText(f"Searching: {cls_name}")
+
     def on_search_finished(self, results):
         self.progress.hide()
+        self.progress_label.hide()
         if not results:
             QMessageBox.information(self, "Search", "No results found.")
             return

@@ -1,7 +1,8 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTabWidget, 
                              QFileDialog, QToolBar, QStatusBar, QMessageBox, QDockWidget, QMenu)
 from PyQt6.QtGui import QAction, QIcon, QKeySequence
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtCore import Qt, QSize, QSettings
+import os
 
 from core.analyzer import AnalysisThread
 from gui.widgets.info_tab import InfoTab
@@ -13,6 +14,9 @@ from gui.widgets.manifest_viewer import ManifestViewer
 from gui.widgets.xref_dialog import XRefDialog
 from gui.widgets.cfg_window import CFGWindow
 from gui.widgets.search_dialog import SearchDialog
+from gui.widgets.cert_viewer import CertViewer
+from gui.widgets.files_view import FilesView
+from gui.widgets.hex_viewer import HexViewer
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -20,6 +24,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Androguard GUI")
         self.resize(1200, 800)
         
+        self.settings = QSettings("Gemini", "AndroguardGUI")
         self.apk_path = None
         self.analysis_thread = None
         self.dx = None
@@ -67,12 +72,21 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
         
         # File Menu
-        file_menu = menubar.addMenu("&File")
+        self.file_menu = menubar.addMenu("&File")
         
         open_action = QAction("&Open APK...", self)
         open_action.setShortcut("Ctrl+O")
         open_action.triggered.connect(self.open_apk_dialog)
-        file_menu.addAction(open_action)
+        self.file_menu.addAction(open_action)
+        
+        self.recent_menu = self.file_menu.addMenu("Recent Files")
+        self.update_recent_files_menu()
+        
+        export_action = QAction("Export to Java...", self)
+        export_action.triggered.connect(self.export_to_java)
+        self.file_menu.addAction(export_action)
+        
+        self.file_menu.addSeparator()
         
         # Device Menu
         device_menu = menubar.addMenu("&Device")
@@ -146,6 +160,7 @@ class MainWindow(QMainWindow):
 
     def load_apk(self, path):
         self.apk_path = path
+        self.add_to_recent_files(path)
         self.status_bar.showMessage(f"Loading {path}...")
         self.project_tree.clear()
         
@@ -191,6 +206,15 @@ class MainWindow(QMainWindow):
         self.manifest_view = ManifestViewer(apk)
         self.central_tabs.insertTab(1, self.manifest_view, "Manifest")
         
+        # Add Files Tab
+        self.files_view = FilesView(apk)
+        self.files_view.fileSelected.connect(self.open_hex_tab)
+        self.central_tabs.addTab(self.files_view, "Files")
+        
+        # Add Certificates Tab
+        self.cert_view = CertViewer(apk)
+        self.central_tabs.addTab(self.cert_view, "Certificates")
+        
         # Add Strings Tab
         self.strings_view = StringsView(dex)
         self.strings_view.stringClicked.connect(self.open_method_from_string)
@@ -203,6 +227,18 @@ class MainWindow(QMainWindow):
 
     def open_method_from_string(self, method_obj):
         self.open_code_tab(method_obj, is_method=True)
+
+    def open_hex_tab(self, path, data):
+        # Check if already open
+        name = f"Hex: {os.path.basename(path)}"
+        for i in range(self.central_tabs.count()):
+            if self.central_tabs.tabText(i) == name:
+                self.central_tabs.setCurrentIndex(i)
+                return
+        
+        viewer = HexViewer(data)
+        self.central_tabs.addTab(viewer, name)
+        self.central_tabs.setCurrentWidget(viewer)
 
     def on_tree_item_clicked(self, item, column):
         # Handle opening classes/methods from tree
