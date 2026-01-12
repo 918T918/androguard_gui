@@ -18,7 +18,8 @@ class CertViewer(QWidget):
 
     def load_certs(self):
         try:
-            certs = self.apk.get_certificates()
+            # Newer androguard might return a generator or a slightly different list
+            certs = list(self.apk.get_certificates())
             if not certs:
                 self.editor.setPlainText("No certificates found.")
                 return
@@ -27,16 +28,38 @@ class CertViewer(QWidget):
             for i, cert in enumerate(certs):
                 out.append(f"Certificate #{i}")
                 out.append("-" * 20)
-                out.append(f"Issuer: {cert.issuer.human_friendly}")
-                out.append(f"Subject: {cert.subject.human_friendly}")
-                out.append(f"Serial: {cert.serial_number}")
-                out.append(f"Algorithm: {cert.signature_algo}")
-                out.append(f"Valid From: {cert.not_before}")
-                out.append(f"Valid Until: {cert.not_after}")
-                out.append(f"SHA1: {cert.sha1_fingerprint}")
-                out.append(f"SHA256: {cert.sha256_fingerprint}")
+                
+                # Use getattr to be safe with different androguard versions
+                def get_val(obj, attr):
+                    val = getattr(obj, attr, "N/A")
+                    if callable(val):
+                        try: val = val()
+                        except: val = "N/A"
+                    return str(val)
+
+                # Issuer/Subject might be objects with human_friendly or just strings
+                issuer = getattr(cert, 'issuer', None)
+                if hasattr(issuer, 'human_friendly'):
+                    out.append(f"Issuer: {issuer.human_friendly}")
+                else:
+                    out.append(f"Issuer: {str(issuer)}")
+
+                subject = getattr(cert, 'subject', None)
+                if hasattr(subject, 'human_friendly'):
+                    out.append(f"Subject: {subject.human_friendly}")
+                else:
+                    out.append(f"Subject: {str(subject)}")
+
+                out.append(f"Serial: {get_val(cert, 'serial_number')}")
+                out.append(f"Algorithm: {get_val(cert, 'signature_algo')}")
+                out.append(f"Valid From: {get_val(cert, 'not_before')}")
+                out.append(f"Valid Until: {get_val(cert, 'not_after')}")
+                out.append(f"SHA1: {get_val(cert, 'sha1_fingerprint')}")
+                out.append(f"SHA256: {get_val(cert, 'sha256_fingerprint')}")
                 out.append("\n")
                 
             self.editor.setPlainText("\n".join(out))
         except Exception as e:
             self.editor.setPlainText(f"Error loading certificates: {e}")
+            import traceback
+            traceback.print_exc()
