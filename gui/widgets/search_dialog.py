@@ -46,7 +46,7 @@ class FullTextSearchThread(QThread):
         
         for i, c_analysis in enumerate(classes):
             if i % 10 == 0:
-                self.progress.emit(int((i / total) * 100), c_analysis.name)
+                self.progress.emit(int((i / total) * 100), str(c_analysis.name))
             
             try:
                 cls = c_analysis.get_vm_class()
