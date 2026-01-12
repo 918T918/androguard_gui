@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTabWidget, 
-                             QFileDialog, QToolBar, QStatusBar, QMessageBox, QDockWidget, QMenu, QApplication)
+                             QFileDialog, QToolBar, QStatusBar, QMessageBox, QDockWidget, QMenu, QApplication, QProgressBar)
 from PyQt6.QtGui import QAction, QIcon, QKeySequence
 from PyQt6.QtCore import Qt, QSize, QSettings
 import os
@@ -110,7 +110,6 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         
-        from PyQt6.QtWidgets import QProgressBar
         self.progress_bar = QProgressBar()
         self.progress_bar.setMaximumHeight(15)
         self.progress_bar.setMaximumWidth(200)
