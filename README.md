@@ -1,40 +1,40 @@
 # Androguard GUI
 
-**Androguard GUI** is a modern, feature-rich desktop interface for the [Androguard](https://github.com/androguard/androguard) reverse engineering framework. Built with Python and PyQt6, it provides a user-friendly environment for analyzing Android APKs, decompiling bytecode, and inspecting application internals.
+**Androguard GUI** is a professional, high-performance desktop interface for the [Androguard](https://github.com/androguard/androguard) reverse engineering framework. Built with Python and PyQt6, it provides a comprehensive suite for analyzing Android APKs, decompiling bytecode, and security auditing.
 
-## 🚀 Features
+## 🚀 Key Features
 
 ### 🔍 Analysis & Reverse Engineering
-*   **Integrated Decompiler**: View decompiled Java source code using the DAD decompiler, complete with syntax highlighting.
-*   **Full-Text Code Search**: Search for any keyword (API calls, variable names) inside the decompiled Java source across the entire APK.
-*   **Bulk Export to Java**: Decompile and export the entire APK structure to a local directory in one click.
-*   **Method XRefs (Cross-References)**: Right-click any method in the tree view to find all its callers.
-*   **Control Flow Graphs (CFG)**: Visualize method logic with interactive graphs (requires Graphviz).
-*   **Strings & XRefs**: Powerful search for string constants with instant usage navigation.
+*   **Integrated Decompiler**: View decompiled Java source code (DAD) with syntax highlighting.
+*   **Smali Bytecode Viewer**: Access raw Dalvik instructions when decompilation isn't enough.
+*   **Frida Hook Generator**: Right-click any method to instantly generate and copy a Frida hooking snippet.
+*   **Full-Text Code Search**: Scan the entire decompiled codebase for keywords, API calls, or logic.
+*   **Bulk Export to Java**: Convert the entire APK structure into a Java project with one click.
+*   **Method XRefs & CFG**: Find callers and visualize logic flow with Control Flow Graphs.
+
+### 🛡️ Security & Auditing
+*   **Security Hotspot Scanner**: Automatically scan for sensitive APIs (Crypto, Network, Reflection, WebView, SMS).
+*   **Certificate & Signature Viewer**: Inspect app signatures, fingerprints, and developer details.
+*   **AndroidManifest.xml**: View decoded, syntax-highlighted manifest with entry point analysis.
+*   **Resources Decoder**: Inspect and decode `resources.arsc` XML data.
 
 ### 📦 APK Internals
-*   **AndroidManifest.xml**: Dedicated tab with syntax-highlighted XML view of the decoded manifest.
-*   **Files & Hex Viewer**: Browse all files inside the APK (DEX, resources, assets) and inspect them in a built-in Hex Viewer.
-*   **Certificate Viewer**: Inspect app signatures, fingerprints (SHA1/SHA256), and developer certificate details.
-*   **Project Explorer**: Navigable tree view of the DEX structure organized by package and class.
+*   **Files & Hex Viewer**: Browse all files inside the APK and inspect them in a built-in Hex Viewer.
+*   **Project Explorer**: Hierarchical view of DEX structures, packages, and classes.
 
-### 📱 Device & Workflow
-*   **ADB Integration**: List packages, search, and **pull APKs directly from connected devices** for instant analysis.
-*   **Recent Files**: Quick access to previously analyzed APKs from the File menu.
-*   **Navigation History**: Browser-like Back and Forward buttons for seamless code navigation.
-*   **Professional Error Handling**: Global exception tracking and detailed logging (`androguard_gui.log`) for maximum stability.
+### 📱 Workflow & Aesthetics
+*   **Professional Dark Mode**: High-contrast dark interface for long analysis sessions.
+*   **ADB Integration**: List, search, and pull APKs directly from devices.
+*   **Navigation History**: Browser-style navigation through analyzed symbols.
+*   **Recent Files**: Quick access to your latest analysis projects.
 
 ## 📋 Prerequisites
 
 *   **Python 3.8+**
-*   **ADB** (Android Debug Bridge) - For device integration features.
-*   **Graphviz** - For Control Flow Graph (CFG) visualization.
-    *   Linux: `sudo apt install graphviz`
-    *   Windows/Mac: [Download here](https://graphviz.org/download/)
+*   **ADB** (Android Debug Bridge) - For device integration.
+*   **Graphviz** - For CFG visualization.
 
 ## 🛠️ Installation
-
-### Quick Install (Linux)
 
 ```bash
 git clone https://github.com/918T918/androguard_gui.git
@@ -49,10 +49,10 @@ sudo ./install.sh
 androguard-gui
 ```
 
-### Advanced Features
-*   **Search**: Press `Ctrl+Shift+F` to search for symbols or perform a **Full-Text** scan of the entire codebase.
-*   **Export**: Use **File > Export to Java...** to convert the entire APK into a Java project.
-*   **Hex View**: Go to the **Files** tab and double-click any file to see its raw hex dump.
+### Power User Tips
+*   **Right-Click**: Use the context menu in the Project tree for XRefs, CFGs, Smali, and Frida hooks.
+*   **Global Search**: `Ctrl+Shift+F` for symbols or full-text code scanning.
+*   **Aesthetics**: Use the "Toggle Dark Mode" button in the toolbar for a pro look.
 
 ## 📄 License
 

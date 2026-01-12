@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTabWidget, 
-                             QFileDialog, QToolBar, QStatusBar, QMessageBox, QDockWidget, QMenu)
+                             QFileDialog, QToolBar, QStatusBar, QMessageBox, QDockWidget, QMenu, QApplication)
 from PyQt6.QtGui import QAction, QIcon, QKeySequence
 from PyQt6.QtCore import Qt, QSize, QSettings
 import os
@@ -17,6 +17,9 @@ from gui.widgets.search_dialog import SearchDialog
 from gui.widgets.cert_viewer import CertViewer
 from gui.widgets.files_view import FilesView
 from gui.widgets.hex_viewer import HexViewer
+from gui.widgets.smali_viewer import SmaliViewer
+from gui.widgets.resource_viewer import ResourceViewer
+from gui.widgets.scanner_tab import ScannerTab
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -26,6 +29,10 @@ class MainWindow(QMainWindow):
         
         self.settings = QSettings("Gemini", "AndroguardGUI")
         self.apk_path = None
+        
+        # Theme
+        self.dark_mode = self.settings.value("darkMode", "True") == "True"
+        
         self.analysis_thread = None
         self.dx = None
         
@@ -38,40 +45,87 @@ class MainWindow(QMainWindow):
         self.setup_ui()
         self.setup_menu()
         self.setup_toolbar()
+        self.apply_theme()
         
+    def apply_theme(self):
+        if self.dark_mode:
+            self.setStyleSheet("""
+                QMainWindow, QWidget, QDockWidget, QDialog {
+                    background-color: #2b2b2b;
+                    color: #d3d3d3;
+                }
+                QTabWidget::pane { border: 1px solid #444; }
+                QTabBar::tab { background: #3c3f41; padding: 5px; margin: 2px; }
+                QTabBar::tab:selected { background: #4b4b4b; }
+                QTreeWidget, QListWidget, QTextEdit, QPlainTextEdit, QTableWidget, QLineEdit {
+                    background-color: #323232;
+                    color: #e0e0e0;
+                    border: 1px solid #555;
+                }
+                QMenuBar, QMenu, QToolBar {
+                    background-color: #3c3f41;
+                    color: #d3d3d3;
+                }
+                QMenu::item:selected { background-color: #4b4b4b; }
+                QPushButton {
+                    background-color: #4e5254;
+                    color: #eee;
+                    border: 1px solid #555;
+                    padding: 5px;
+                }
+                QPushButton:hover { background-color: #5c6164; }
+                QStatusBar { background: #3c3f41; color: #888; }
+            """)
+        else:
+            self.setStyleSheet("")
+            
+    def toggle_dark_mode(self):
+        self.dark_mode = not self.dark_mode
+        self.settings.setValue("darkMode", str(self.dark_mode))
+        self.apply_theme()
+
     def setup_ui(self):
-        # Central Widget - Tabs for different views (Code, Manifest, Strings, etc.)
         self.central_tabs = QTabWidget()
         self.central_tabs.setTabsClosable(True)
         self.central_tabs.tabCloseRequested.connect(self.close_tab)
         self.setCentralWidget(self.central_tabs)
         
-        # Dock Widget - Project Tree
         self.tree_dock = QDockWidget("Project Structure", self)
         self.tree_dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea)
         self.project_tree = ProjectTree()
-        
-        # Context Menu for Tree
         self.project_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.project_tree.customContextMenuRequested.connect(self.open_tree_context_menu)
         self.project_tree.itemClicked.connect(self.on_tree_item_clicked)
-        
         self.tree_dock.setWidget(self.project_tree)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.tree_dock)
         
-        # Info Tab (Always present or first loaded)
         self.info_tab = InfoTab()
         self.central_tabs.addTab(self.info_tab, "Dashboard")
+        
+        # Log Console
+        self.log_dock = QDockWidget("Log Console", self)
+        self.log_dock.setAllowedAreas(Qt.DockWidgetArea.BottomDockWidgetArea)
+        self.log_console = QTextEdit()
+        self.log_console.setReadOnly(True)
+        self.log_console.setFont(QFont("Monospace", 9))
+        self.log_dock.setWidget(self.log_console)
+        self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.log_dock)
         
         # Status Bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
+        
+        from PyQt6.QtWidgets import QProgressBar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setMaximumHeight(15)
+        self.progress_bar.setMaximumWidth(200)
+        self.progress_bar.hide()
+        self.status_bar.addPermanentWidget(self.progress_bar)
+        
         self.status_bar.showMessage("Ready")
 
     def setup_menu(self):
         menubar = self.menuBar()
-        
-        # File Menu
         self.file_menu = menubar.addMenu("&File")
         
         open_action = QAction("&Open APK...", self)
@@ -85,16 +139,13 @@ class MainWindow(QMainWindow):
         export_action = QAction("Export to Java...", self)
         export_action.triggered.connect(self.export_to_java)
         self.file_menu.addAction(export_action)
-        
         self.file_menu.addSeparator()
         
-        # Device Menu
         device_menu = menubar.addMenu("&Device")
         list_packages_action = QAction("&List Packages...", self)
         list_packages_action.triggered.connect(self.open_device_dialog)
         device_menu.addAction(list_packages_action)
         
-        # Search Menu
         search_menu = menubar.addMenu("&Search")
         search_action = QAction("&Search Symbols...", self)
         search_action.setShortcut("Ctrl+Shift+F")
@@ -104,11 +155,7 @@ class MainWindow(QMainWindow):
         exit_action = QAction("E&xit", self)
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
-        
-        # View Menu
-        view_menu = menubar.addMenu("&View")
-        # Add toggles for docks later
+        menubar.addAction(exit_action)
 
     def setup_toolbar(self):
         toolbar = QToolBar("Main Toolbar")
@@ -136,17 +183,61 @@ class MainWindow(QMainWindow):
         self.fwd_action.triggered.connect(self.go_forward)
         self.fwd_action.setEnabled(False)
         toolbar.addAction(self.fwd_action)
+        
+        toolbar.addSeparator()
+        theme_action = QAction("Toggle Dark Mode", self)
+        theme_action.triggered.connect(self.toggle_dark_mode)
+        toolbar.addAction(theme_action)
+
+    def update_recent_files_menu(self):
+        self.recent_menu.clear()
+        recent_files = self.settings.value("recentFiles", [])
+        if not recent_files:
+            action = QAction("No recent files", self)
+            action.setEnabled(False)
+            self.recent_menu.addAction(action)
+            return
+        for path in recent_files:
+            action = QAction(path, self)
+            action.triggered.connect(self._make_recent_loader(path))
+            self.recent_menu.addAction(action)
+
+    def _make_recent_loader(self, path):
+        return lambda: self.load_apk(path)
+
+    def add_to_recent_files(self, path):
+        recent_files = self.settings.value("recentFiles", [])
+        if not isinstance(recent_files, list): recent_files = []
+        if path in recent_files: recent_files.remove(path)
+        recent_files.insert(0, path)
+        recent_files = recent_files[:10]
+        self.settings.setValue("recentFiles", recent_files)
+        self.update_recent_files_menu()
+
+    def export_to_java(self):
+        if not self.dx:
+            QMessageBox.warning(self, "Export", "Analyze an APK first.")
+            return
+        out_dir = QFileDialog.getExistingDirectory(self, "Select Export Directory")
+        if not out_dir: return
+        from core.exporter import ExportThread
+        from PyQt6.QtWidgets import QProgressDialog
+        progress = QProgressDialog("Exporting classes...", "Cancel", 0, 0, self)
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.show()
+        self.export_thread = ExportThread(self.dx, out_dir)
+        self.export_thread.progress.connect(lambda m: progress.setLabelText(f"Exporting: {m}"))
+        self.export_thread.finished.connect(lambda: (progress.cancel(), QMessageBox.information(self, "Export", "Export Complete!")))
+        self.export_thread.start()
 
     def open_apk_dialog(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "Open APK", "", "APK Files (*.apk);;All Files (*)")
-        if file_name:
-            self.load_apk(file_name)
+        if file_name: self.load_apk(file_name)
 
     def open_device_dialog(self):
         dialog = DeviceDialog(self)
         if dialog.exec():
-            if dialog.selected_apk_path:
-                self.load_apk(dialog.selected_apk_path)
+            if dialog.selected_apk_path: self.load_apk(dialog.selected_apk_path)
 
     def open_search_dialog(self):
         if not self.dx:
@@ -161,171 +252,158 @@ class MainWindow(QMainWindow):
     def load_apk(self, path):
         self.apk_path = path
         self.add_to_recent_files(path)
+        self.log_console.append(f"<b>Loading {path}...</b>")
         self.status_bar.showMessage(f"Loading {path}...")
         self.project_tree.clear()
+        self.history = []; self.history_index = -1; self.update_nav_buttons()
+        while self.central_tabs.count() > 1: self.central_tabs.removeTab(1)
         
-        # Reset History
-        self.history = []
-        self.history_index = -1
-        self.update_nav_buttons()
+        self.progress_bar.setValue(0)
+        self.progress_bar.show()
         
-        # Close all tabs except info
-        while self.central_tabs.count() > 1:
-            self.central_tabs.removeTab(1)
-        
-        # Start background analysis
         self.analysis_thread = AnalysisThread(path)
         self.analysis_thread.finished.connect(self.on_analysis_finished)
         self.analysis_thread.progress.connect(self.on_analysis_progress)
         self.analysis_thread.error.connect(self.on_analysis_error)
         self.analysis_thread.start()
-        
-        # Disable interactions that require loaded data
         self.project_tree.setEnabled(False)
 
-    def on_analysis_progress(self, msg):
+    def on_analysis_progress(self, msg, val):
         self.status_bar.showMessage(msg)
+        self.log_console.append(f"[*] {msg}")
+        self.progress_bar.setValue(val)
 
     def on_analysis_finished(self, apk, classes, dex):
         self.status_bar.showMessage("Analysis Complete")
-        self.dx = dex # Wait, the signature in analyzer.py was (a, d, dx).
-        # In analyzer.py: self.finished.emit(a, d, dx)
-        # So here it is (apk, classes_dex_list, analysis_obj)
-        # But wait, my signature in on_analysis_finished is (apk, classes, dex). 
-        # Variable naming is confusing. 
-        # analyzer.py: finished.emit(a, d, dx) -> (APK, [DalvikVMFormat], Analysis)
-        # So 'classes' is [DalvikVMFormat], 'dex' is Analysis.
-        # Let's rename for clarity.
-        
+        self.log_console.append("<font color='green'><b>[+] Analysis Complete!</b></font>")
+        self.progress_bar.hide()
         self.dx = dex 
         self.project_tree.setEnabled(True)
         self.project_tree.populate(apk, classes, dex)
         self.info_tab.update_info(apk)
-        
-        # Add Manifest Tab
         self.manifest_view = ManifestViewer(apk)
         self.central_tabs.insertTab(1, self.manifest_view, "Manifest")
-        
-        # Add Files Tab
+        self.res_view = ResourceViewer(apk)
+        self.central_tabs.addTab(self.res_view, "Resources")
+        self.scanner_view = ScannerTab(dex)
+        self.scanner_view.methodSelected.connect(lambda m: self.open_code_tab(m, is_method=True))
+        self.central_tabs.addTab(self.scanner_view, "Security Scan")
         self.files_view = FilesView(apk)
         self.files_view.fileSelected.connect(self.open_hex_tab)
         self.central_tabs.addTab(self.files_view, "Files")
-        
-        # Add Certificates Tab
         self.cert_view = CertViewer(apk)
         self.central_tabs.addTab(self.cert_view, "Certificates")
-        
-        # Add Strings Tab
         self.strings_view = StringsView(dex)
         self.strings_view.stringClicked.connect(self.open_method_from_string)
         self.central_tabs.addTab(self.strings_view, "Strings")
-        
+
     def on_analysis_error(self, msg):
         self.status_bar.showMessage(f"Error: {msg}")
+        self.log_console.append(f"<font color='red'><b>[!] Error: {msg}</b></font>")
+        self.progress_bar.hide()
         QMessageBox.critical(self, "Error", f"Failed to analyze APK:\n{msg}")
         self.project_tree.setEnabled(True)
 
-    def open_method_from_string(self, method_obj):
-        self.open_code_tab(method_obj, is_method=True)
+    def open_method_from_string(self, method_obj): self.open_code_tab(method_obj, is_method=True)
 
     def open_hex_tab(self, path, data):
-        # Check if already open
         name = f"Hex: {os.path.basename(path)}"
         for i in range(self.central_tabs.count()):
             if self.central_tabs.tabText(i) == name:
                 self.central_tabs.setCurrentIndex(i)
                 return
-        
         viewer = HexViewer(data)
         self.central_tabs.addTab(viewer, name)
         self.central_tabs.setCurrentWidget(viewer)
 
     def on_tree_item_clicked(self, item, column):
-        # Handle opening classes/methods from tree
         data = item.data(0, Qt.ItemDataRole.UserRole)
-        if not data:
-            return
-            
-        # Example: data = {'type': 'class', 'obj': class_obj}
-        if data['type'] == 'class':
-            self.open_code_tab(data['obj'], is_method=False)
-        elif data['type'] == 'method':
-            self.open_code_tab(data['obj'], is_method=True)
-            
+        if not data: return
+        if data['type'] == 'class': self.open_code_tab(data['obj'], is_method=False)
+        elif data['type'] == 'method': self.open_code_tab(data['obj'], is_method=True)
+
     def open_tree_context_menu(self, position):
         item = self.project_tree.itemAt(position)
         if not item: return
-        
         data = item.data(0, Qt.ItemDataRole.UserRole)
         if not data: return
-        
         menu = QMenu()
-        
         if data['type'] == 'method':
             method_obj = data['obj']
             action_xref = menu.addAction("Find Usages (XRefs)")
             action_cfg = menu.addAction("View Control Flow Graph")
-            
+            action_smali = menu.addAction("View Smali Bytecode")
+            action_frida = menu.addAction("Generate Frida Hook")
             action = menu.exec(self.project_tree.viewport().mapToGlobal(position))
-            
-            if action == action_xref:
-                self.show_xrefs(method_obj)
-            elif action == action_cfg:
-                self.show_cfg(method_obj)
-                
+            if action == action_xref: self.show_xrefs(method_obj)
+            elif action == action_cfg: self.show_cfg(method_obj)
+            elif action == action_smali: self.open_smali_tab(method_obj)
+            elif action == action_frida: self.generate_frida_hook(method_obj)
+
     def show_xrefs(self, method_obj):
         if not self.dx: return
-        
-        # get_method return MethodAnalysis
         ma = self.dx.get_method(method_obj)
         if not ma:
             QMessageBox.information(self, "XRefs", "No analysis data for this method.")
             return
-            
-        # get_xref_from returns (ClassAnalysis, MethodAnalysis, offset)
         xrefs = list(ma.get_xref_from())
-        
         if not xrefs:
             QMessageBox.information(self, "XRefs", "No references found.")
             return
-            
         dialog = XRefDialog(self, xrefs)
-        if dialog.exec():
-            # Go to selected method
-            self.open_code_tab(dialog.selected_method, is_method=True)
+        if dialog.exec(): self.open_code_tab(dialog.selected_method, is_method=True)
 
     def show_cfg(self, method_obj):
         if not self.dx: return
         self.cfg_window = CFGWindow(method_obj, self.dx)
         self.cfg_window.show()
 
-    def open_code_tab(self, obj, is_method=False):
-        # Record history if not navigating back/fwd
-        if not self.navigating:
-            self.add_history(obj, is_method)
-
-        name = obj.get_name() if hasattr(obj, 'get_name') else str(obj)
-        
-        # Check if already open
+    def open_smali_tab(self, method_obj):
+        name = f"Smali: {method_obj.get_name()}"
         for i in range(self.central_tabs.count()):
             if self.central_tabs.tabText(i) == name:
                 self.central_tabs.setCurrentIndex(i)
                 return
-        
+        viewer = SmaliViewer(method_obj)
+        self.central_tabs.addTab(viewer, name)
+        self.central_tabs.setCurrentWidget(viewer)
+
+    def generate_frida_hook(self, method_obj):
+        class_name = method_obj.get_class_name()[1:-1].replace('/', '.')
+        method_name = method_obj.get_name()
+        lines = [
+            "Java.perform(function() {",
+            f"    var targetClass = Java.use('{class_name}');",
+            f"    targetClass.{method_name}.overload(...).implementation = function() {{",
+            f"        console.log('[*] {method_name} called!');",
+            f"        var ret = this.{method_name}.apply(this, arguments);",
+            f"        console.log('[*] {method_name} returns: ' + ret);",
+            "        return ret;",
+            "    };",
+            "});"
+        ]
+        hook = "\\n".join(lines)
+        QApplication.clipboard().setText(hook)
+        self.status_bar.showMessage("Frida hook copied to clipboard!")
+        QMessageBox.information(self, "Frida Hook", "Frida hook snippet has been copied to your clipboard.")
+
+    def open_code_tab(self, obj, is_method=False):
+        if not self.navigating: self.add_history(obj, is_method)
+        name = obj.get_name() if hasattr(obj, 'get_name') else str(obj)
+        for i in range(self.central_tabs.count()):
+            if self.central_tabs.tabText(i) == name:
+                self.central_tabs.setCurrentIndex(i)
+                return
         editor = CodeEditorTab(obj, is_method, dx=self.dx)
         self.central_tabs.addTab(editor, name)
         self.central_tabs.setCurrentWidget(editor)
 
-    def close_tab(self, index):
-        self.central_tabs.removeTab(index)
-        
+    def close_tab(self, index): self.central_tabs.removeTab(index)
     def add_history(self, obj, is_method):
-        # Remove forward history
         self.history = self.history[:self.history_index+1]
         self.history.append((obj, is_method))
         self.history_index += 1
         self.update_nav_buttons()
-        
     def go_back(self):
         if self.history_index > 0:
             self.history_index -= 1
@@ -334,7 +412,6 @@ class MainWindow(QMainWindow):
             self.open_code_tab(obj, is_method)
             self.navigating = False
             self.update_nav_buttons()
-
     def go_forward(self):
         if self.history_index < len(self.history) - 1:
             self.history_index += 1
@@ -343,7 +420,6 @@ class MainWindow(QMainWindow):
             self.open_code_tab(obj, is_method)
             self.navigating = False
             self.update_nav_buttons()
-            
     def update_nav_buttons(self):
         self.back_action.setEnabled(self.history_index > 0)
         self.fwd_action.setEnabled(self.history_index < len(self.history) - 1)
