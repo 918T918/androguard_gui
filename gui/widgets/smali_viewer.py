@@ -23,7 +23,7 @@ class SmaliViewer(QWidget):
             
             code = self.method_obj.get_code()
             if code:
-                for ins in code.get_instructions():
+                for ins in code.get_bc().get_instructions():
                     out.append(f"    {ins.get_name()} {ins.get_output()}")
             
             out.append(".end method")

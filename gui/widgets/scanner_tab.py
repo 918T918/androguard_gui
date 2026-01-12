@@ -34,8 +34,10 @@ class ScannerThread(QThread):
                 code = m_obj.get_code()
                 if not code: continue
                 
-                for ins in code.get_instructions():
-                    output = ins.get_output()
+                # DalvikCode doesn't have get_instructions() in some versions
+                # It has get_instruction() or we can iterate the bytecode
+                for ins in code.get_bc().get_instructions():
+                    output = str(ins.get_output())
                     for category, keywords in self.HOTSPOTS.items():
                         for k in keywords:
                             if k in output:
