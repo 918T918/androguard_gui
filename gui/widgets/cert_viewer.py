@@ -25,7 +25,7 @@ class CertViewer(QWidget):
                 
             out = []
             for i, cert in enumerate(certs):
-                out.append(f"Certificate
+                out.append(f"Certificate #{i}")
                 out.append("-" * 20)
                 out.append(f"Issuer: {cert.issuer.human_friendly}")
                 out.append(f"Subject: {cert.subject.human_friendly}")
