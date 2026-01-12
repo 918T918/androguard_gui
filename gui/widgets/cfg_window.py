@@ -6,8 +6,6 @@ import tempfile
 import os
 import subprocess
 
-# Androguard CFG imports
-from androguard.core.androconf import androconf
 # We can use internal tools or just export basic blocks manually.
 # A simpler way is to use androguard's ability to create dot files if available, 
 # or manually traverse basic blocks.
