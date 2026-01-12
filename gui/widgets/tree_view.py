@@ -78,10 +78,10 @@ class ProjectTree(QTreeWidget):
         
         for d in classes_dex:
             for cls in d.get_classes():
-                name = cls.get_name() # La/b/c;
+                name = str(cls.get_name()) # La/b/c;
                 clean_name = name[1:-1] # a/b/c
                 
-                parts = clean_name.split('/')
+                parts = [str(p) for p in clean_name.split('/')]
                 class_name = parts[-1]
                 package_path = "/".join(parts[:-1])
                 

@@ -21,10 +21,12 @@ class SearchThread(QThread):
         for i, c in enumerate(classes):
             if i % 100 == 0:
                 self.progress.emit(int((i / total) * 100))
-            if self.query in c.name.lower():
+            c_name = str(c.name)
+            if self.query in c_name.lower():
                 results.append(('class', c.get_vm_class()))
             for m in c.get_methods():
-                if self.query in m.name.lower():
+                m_name = str(m.name)
+                if self.query in m_name.lower():
                     results.append(('method', m.get_method()))
         self.finished.emit(results)
 
@@ -135,7 +137,7 @@ class SearchDialog(QDialog):
             return
             
         for type_, obj in results:
-            name = obj.get_name()
+            name = str(obj.get_name())
             item = QListWidgetItem(f"[{type_}] {name}")
             item.setData(Qt.ItemDataRole.UserRole, (type_, obj))
             self.results_list.addItem(item)
