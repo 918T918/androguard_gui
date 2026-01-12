@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTabWidget, 
                              QFileDialog, QToolBar, QStatusBar, QMessageBox, QDockWidget, QMenu, QApplication, QProgressBar, QTextEdit)
-from PyQt6.QtGui import QAction, QIcon, QKeySequence
+from PyQt6.QtGui import QAction, QIcon, QKeySequence, QFont
 from PyQt6.QtCore import Qt, QSize, QSettings
 import os
 
