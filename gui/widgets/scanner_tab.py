@@ -31,6 +31,10 @@ class ScannerThread(QThread):
                 
             for method in c.get_methods():
                 m_obj = method.get_method()
+                
+                if not hasattr(m_obj, 'get_code'):
+                    continue
+                    
                 code = m_obj.get_code()
                 if not code: continue
                 
