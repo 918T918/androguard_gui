@@ -84,10 +84,12 @@ class DeviceDialog(QDialog):
         try:
             devices = self.adb.get_devices()
             if devices:
+                self.device_combo.setEnabled(True)
                 self.device_combo.addItems(devices)
             else:
                 self.device_combo.addItem("No devices found")
                 self.device_combo.setEnabled(False)
+                QMessageBox.information(self, "ADB", "No connected Android devices detected. Make sure USB debugging is enabled.")
         except Exception as e:
             QMessageBox.warning(self, "ADB Error", str(e))
 
