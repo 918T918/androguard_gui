@@ -275,9 +275,9 @@ class MainWindow(QMainWindow):
         self.project_tree.setEnabled(True)
         self.project_tree.populate(apk, classes, dex)
         self.info_tab.update_info(apk)
-        self.manifest_view = ManifestViewer(apk)
+        self.manifest_view = ManifestViewer(apk, dark_mode=self.dark_mode)
         self.central_tabs.insertTab(1, self.manifest_view, "Manifest")
-        self.res_view = ResourceViewer(apk)
+        self.res_view = ResourceViewer(apk, dark_mode=self.dark_mode)
         self.central_tabs.addTab(self.res_view, "Resources")
         self.scanner_view = ScannerTab(dex)
         self.scanner_view.methodSelected.connect(lambda m: self.open_code_tab(m, is_method=True))
@@ -388,7 +388,7 @@ class MainWindow(QMainWindow):
             if self.central_tabs.tabText(i) == name:
                 self.central_tabs.setCurrentIndex(i)
                 return
-        editor = CodeEditorTab(obj, is_method, dx=self.dx)
+        editor = CodeEditorTab(obj, is_method, dx=self.dx, dark_mode=self.dark_mode)
         self.central_tabs.addTab(editor, name)
         self.central_tabs.setCurrentWidget(editor)
 

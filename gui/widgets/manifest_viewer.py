@@ -5,20 +5,19 @@ from pygments.lexers import XmlLexer
 from pygments.formatters import HtmlFormatter
 
 class ManifestViewer(QWidget):
-    def __init__(self, apk):
+    def __init__(self, apk, dark_mode=True):
         super().__init__()
         self.apk = apk
+        self.dark_mode = dark_mode
         self.setup_ui()
         self.load_manifest()
 
     def setup_ui(self):
         layout = QVBoxLayout()
         layout.setContentsMargins(0,0,0,0)
-        
         self.editor = QTextEdit()
         self.editor.setFont(QFont("Monospace", 10))
         self.editor.setReadOnly(True)
-        
         layout.addWidget(self.editor)
         self.setLayout(layout)
 
@@ -28,8 +27,8 @@ class ManifestViewer(QWidget):
             if axml is not None:
                 from lxml import etree
                 xml_str = etree.tostring(axml, pretty_print=True, encoding='unicode')
-                
-                formatter = HtmlFormatter(style='colorful', full=True, noclasses=True)
+                style = 'monokai' if self.dark_mode else 'colorful'
+                formatter = HtmlFormatter(style=style, full=True, noclasses=True)
                 html_content = highlight(xml_str, XmlLexer(), formatter)
                 self.editor.setHtml(html_content)
             else:
