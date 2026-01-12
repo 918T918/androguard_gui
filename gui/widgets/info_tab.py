@@ -44,7 +44,7 @@ class InfoTab(QWidget):
         perms = apk.get_permissions()
         if perms:
             for p in perms:
-                self.form_layout.addRow(QLabel(p))
+                self.form_layout.addRow(QLabel(str(p)))
         else:
              self.form_layout.addRow(QLabel("No permissions found."))
 
@@ -53,14 +53,14 @@ class InfoTab(QWidget):
         acts = apk.get_activities()
         if acts:
             for a in acts:
-                self.form_layout.addRow(QLabel(a))
+                self.form_layout.addRow(QLabel(str(a)))
         
         # Services
         self.add_section("Services")
         srvs = apk.get_services()
         if srvs:
             for s in srvs:
-                self.form_layout.addRow(QLabel(s))
+                self.form_layout.addRow(QLabel(str(s)))
 
     def add_section(self, title):
         label = QLabel(title)

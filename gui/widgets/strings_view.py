@@ -58,13 +58,13 @@ class StringsView(QWidget):
         self.table.setRowCount(min(len(strings_list), limit))
         
         for i, s in enumerate(strings_list[:limit]):
-            val = s.get_value()
+            val = str(s.get_value())
             item = QTableWidgetItem(val)
             item.setData(Qt.ItemDataRole.UserRole, s)
             self.table.setItem(i, 0, item)
 
     def filter_strings(self, text):
-        filtered = [s for s in self.strings if text.lower() in s.get_value().lower()]
+        filtered = [s for s in self.strings if text.lower() in str(s.get_value()).lower()]
         self.update_table(filtered)
 
     def on_cell_double_clicked(self, row, col):
