@@ -301,7 +301,7 @@ class MainWindow(QMainWindow):
     def open_method_from_string(self, method_obj): self.open_code_tab(method_obj, is_method=True)
 
     def open_hex_tab(self, path, data):
-        name = f"Hex: {os.path.basename(path)}"
+        name = str(f"Hex: {os.path.basename(path)}")
         for i in range(self.central_tabs.count()):
             if self.central_tabs.tabText(i) == name:
                 self.central_tabs.setCurrentIndex(i)
@@ -353,7 +353,7 @@ class MainWindow(QMainWindow):
         self.cfg_window.show()
 
     def open_smali_tab(self, method_obj):
-        name = f"Smali: {method_obj.get_name()}"
+        name = str(f"Smali: {method_obj.get_name()}")
         for i in range(self.central_tabs.count()):
             if self.central_tabs.tabText(i) == name:
                 self.central_tabs.setCurrentIndex(i)
@@ -383,7 +383,7 @@ class MainWindow(QMainWindow):
 
     def open_code_tab(self, obj, is_method=False):
         if not self.navigating: self.add_history(obj, is_method)
-        name = obj.get_name() if hasattr(obj, 'get_name') else str(obj)
+        name = str(obj.get_name() if hasattr(obj, 'get_name') else str(obj))
         for i in range(self.central_tabs.count()):
             if self.central_tabs.tabText(i) == name:
                 self.central_tabs.setCurrentIndex(i)
