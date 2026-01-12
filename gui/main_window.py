@@ -29,12 +29,9 @@ class MainWindow(QMainWindow):
         
         self.settings = QSettings("Gemini", "AndroguardGUI")
         self.apk_path = None
-        
         self.dark_mode = self.settings.value("darkMode", "True") == "True"
-        
         self.analysis_thread = None
         self.dx = None
-        
         self.history = []
         self.history_index = -1
         self.navigating = False
@@ -48,34 +45,43 @@ class MainWindow(QMainWindow):
         if self.dark_mode:
             self.setStyleSheet("""
                 QMainWindow, QWidget, QDockWidget, QDialog {
-                    background-color:
-                    color:
+                    background-color: #2b2b2b;
+                    color: #d3d3d3;
                 }
-                QTabWidget::pane { border: 1px solid
-                QTabBar::tab { background:
-                QTabBar::tab:selected { background:
+                QTabWidget::pane { border: 1px solid #444; }
+                QTabBar::tab { background: #3c3f41; color: #d3d3d3; padding: 5px; margin: 2px; }
+                QTabBar::tab:selected { background: #4b4b4b; }
                 QTreeWidget, QListWidget, QTextEdit, QPlainTextEdit, QTableWidget, QLineEdit {
-                    background-color:
-                    color:
-                    border: 1px solid
+                    background-color: #323232;
+                    color: #e0e0e0;
+                    border: 1px solid #555;
                 }
+                QHeaderView::section { background-color: #3c3f41; color: #d3d3d3; }
                 QMenuBar, QMenu, QToolBar {
-                    background-color:
-                    color:
+                    background-color: #3c3f41;
+                    color: #d3d3d3;
                 }
-                QMenu::item:selected { background-color:
+                QMenu::item:selected { background-color: #4b4b4b; }
                 QPushButton {
-                    background-color:
-                    color:
-                    border: 1px solid
+                    background-color: #4e5254;
+                    color: #eee;
+                    border: 1px solid #555;
                     padding: 5px;
                 }
-                QPushButton:hover { background-color:
-                QStatusBar { background:
+                QPushButton:hover { background-color: #5c6164; }
+                QStatusBar { background: #3c3f41; color: #888; }
             """)
         else:
             self.setStyleSheet("")
-            
+        
+        for i in range(self.central_tabs.count()):
+            widget = self.central_tabs.widget(i)
+            if hasattr(widget, 'dark_mode'):
+                widget.dark_mode = self.dark_mode
+                if hasattr(widget, 'load_manifest'): widget.load_manifest()
+                elif hasattr(widget, 'load_code'): widget.load_code()
+                elif hasattr(widget, 'load_resources'): widget.load_resources()
+
     def toggle_dark_mode(self):
         self.dark_mode = not self.dark_mode
         self.settings.setValue("darkMode", str(self.dark_mode))
@@ -109,43 +115,35 @@ class MainWindow(QMainWindow):
         
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        
         self.progress_bar = QProgressBar()
         self.progress_bar.setMaximumHeight(15)
         self.progress_bar.setMaximumWidth(200)
         self.progress_bar.hide()
         self.status_bar.addPermanentWidget(self.progress_bar)
-        
         self.status_bar.showMessage("Ready")
 
     def setup_menu(self):
         menubar = self.menuBar()
         self.file_menu = menubar.addMenu("&File")
-        
         open_action = QAction("&Open APK...", self)
         open_action.setShortcut("Ctrl+O")
         open_action.triggered.connect(self.open_apk_dialog)
         self.file_menu.addAction(open_action)
-        
         self.recent_menu = self.file_menu.addMenu("Recent Files")
         self.update_recent_files_menu()
-        
         export_action = QAction("Export to Java...", self)
         export_action.triggered.connect(self.export_to_java)
         self.file_menu.addAction(export_action)
         self.file_menu.addSeparator()
-        
         device_menu = menubar.addMenu("&Device")
         list_packages_action = QAction("&List Packages...", self)
         list_packages_action.triggered.connect(self.open_device_dialog)
         device_menu.addAction(list_packages_action)
-        
         search_menu = menubar.addMenu("&Search")
         search_action = QAction("&Search Symbols...", self)
         search_action.setShortcut("Ctrl+Shift+F")
         search_action.triggered.connect(self.open_search_dialog)
         search_menu.addAction(search_action)
-        
         exit_action = QAction("E&xit", self)
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
@@ -155,29 +153,23 @@ class MainWindow(QMainWindow):
         toolbar = QToolBar("Main Toolbar")
         toolbar.setIconSize(QSize(16, 16))
         self.addToolBar(toolbar)
-        
         open_action = QAction("Open APK", self)
         open_action.triggered.connect(self.open_apk_dialog)
         toolbar.addAction(open_action)
-        
         device_action = QAction("List Packages", self)
         device_action.triggered.connect(self.open_device_dialog)
         toolbar.addAction(device_action)
-        
         toolbar.addSeparator()
-        
         self.back_action = QAction("Back", self)
         self.back_action.setShortcut(QKeySequence.StandardKey.Back)
         self.back_action.triggered.connect(self.go_back)
         self.back_action.setEnabled(False)
         toolbar.addAction(self.back_action)
-        
         self.fwd_action = QAction("Forward", self)
         self.fwd_action.setShortcut(QKeySequence.StandardKey.Forward)
         self.fwd_action.triggered.connect(self.go_forward)
         self.fwd_action.setEnabled(False)
         toolbar.addAction(self.fwd_action)
-        
         toolbar.addSeparator()
         theme_action = QAction("Toggle Dark Mode", self)
         theme_action.triggered.connect(self.toggle_dark_mode)
@@ -196,8 +188,7 @@ class MainWindow(QMainWindow):
             action.triggered.connect(self._make_recent_loader(path))
             self.recent_menu.addAction(action)
 
-    def _make_recent_loader(self, path):
-        return lambda: self.load_apk(path)
+    def _make_recent_loader(self, path): return lambda: self.load_apk(path)
 
     def add_to_recent_files(self, path):
         recent_files = self.settings.value("recentFiles", [])
@@ -249,12 +240,12 @@ class MainWindow(QMainWindow):
         self.log_console.append(f"<b>Loading {path}...</b>")
         self.status_bar.showMessage(f"Loading {path}...")
         self.project_tree.clear()
-        self.history = []; self.history_index = -1; self.update_nav_buttons()
+        self.history = []
+        self.history_index = -1
+        self.update_nav_buttons()
         while self.central_tabs.count() > 1: self.central_tabs.removeTab(1)
-        
         self.progress_bar.setValue(0)
         self.progress_bar.show()
-        
         self.analysis_thread = AnalysisThread(path)
         self.analysis_thread.finished.connect(self.on_analysis_finished)
         self.analysis_thread.progress.connect(self.on_analysis_progress)
@@ -365,18 +356,8 @@ class MainWindow(QMainWindow):
     def generate_frida_hook(self, method_obj):
         class_name = method_obj.get_class_name()[1:-1].replace('/', '.')
         method_name = method_obj.get_name()
-        lines = [
-            "Java.perform(function() {",
-            f"    var targetClass = Java.use('{class_name}');",
-            f"    targetClass.{method_name}.overload(...).implementation = function() {{",
-            f"        console.log('[*] {method_name} called!');",
-            f"        var ret = this.{method_name}.apply(this, arguments);",
-            f"        console.log('[*] {method_name} returns: ' + ret);",
-            "        return ret;",
-            "    };",
-            "});"
-        ]
-        hook = "\\n".join(lines)
+        lines = ["Java.perform(function() {", f"    var targetClass = Java.use('{class_name}');", f"    targetClass.{method_name}.overload(...).implementation = function() {{", f"        console.log('[*] {method_name} called!');", f"        var ret = this.{method_name}.apply(this, arguments);", f"        console.log('[*] {method_name} returns: ' + ret);", "        return ret;", "    };", "});"]
+        hook = "\n".join(lines)
         QApplication.clipboard().setText(hook)
         self.status_bar.showMessage("Frida hook copied to clipboard!")
         QMessageBox.information(self, "Frida Hook", "Frida hook snippet has been copied to your clipboard.")
