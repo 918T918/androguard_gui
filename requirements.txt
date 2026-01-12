@@ -1,0 +1,3 @@
+androguard
+PyQt6
+Pygments
